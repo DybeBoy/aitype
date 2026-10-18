@@ -30,6 +30,7 @@ class PlanParams:
     bpm: int = 260
     mistakes_per_1000: int = 30
     corrected_pct: int = 85
+    overshoot_pct: int = 20
     seed: int | None = None
 
 
@@ -130,10 +131,12 @@ class _Typist:
         self.raw: list[float] = []   # intrinsic keystroke intervals, without pauses (for calibration)
         self.n_err = 0
         self.n_fixed = 0
+        self.n_over = 0
         eligible = sum(c.isalnum() for c in text)
         per_char = p.mistakes_per_1000 / 1000.0
         self.p_err = min(0.5, per_char * len(text) / eligible) if eligible else 0.0
         self.p_fix = p.corrected_pct / 100.0
+        self.p_overshoot = p.overshoot_pct / 100.0
 
     # helpers
     def _ln(self, median: float, sigma: float = 0.4) -> float:
@@ -155,7 +158,7 @@ class _Typist:
         self.prev = ch
 
     def _backspace(self) -> None:
-        d = max(40.0, self.rng.gauss(80, 18)) * self.pscale
+        d = max(50.0, self._ln(150, 0.6)) * self.pscale
         self.events.append({"d": round(d + self.pending), "k": "backspace"})
         self.pending = 0.0
         self.prev = ""
@@ -257,6 +260,13 @@ class _Typist:
             lag = max(lag, 1)                        # nothing visibly wrong until more text appears
         return min(lag, end - j)
 
+    def _overshoot(self, i: int) -> int:
+        """Sometimes the typist backspaces 1-2 keys too many, wiping correct text before the mistake."""
+        if self.rng.random() >= self.p_overshoot:
+            return 0
+        extra = 2 if self.rng.random() < 0.35 else 1
+        return min(extra, i)                         # can't delete before the start of the text
+
     def run(self) -> None:
         t, n, i = self.text, len(self.text), 0
         while i < n:
@@ -272,12 +282,15 @@ class _Typist:
                     for q in range(j, j + lag):
                         self._char(q)
                     self.pending += self._ln(330) * self.pscale          # reaction time
-                    for _ in range(len(wrong) + lag):
+                    over = self._overshoot(i)
+                    for _ in range(len(wrong) + lag + over):
                         self._backspace()
                     self.pending += max(40.0, self.rng.gauss(130, 40))   # regroup
-                    for q in range(i, j + lag):                          # retype, a bit more careful
+                    for q in range(i - over, j + lag):                   # retype, a bit more careful
                         self._type(t[q], self.speed[q], 1.12)
                     self.n_fixed += 1
+                    if over:
+                        self.n_over += 1
                     i = j + lag
                 else:
                     i = j
@@ -313,6 +326,7 @@ def make_plan(text: str, params: PlanParams, layout: str = "us") -> dict:
             "bpm": params.bpm,
             "mistakes_per_1000": params.mistakes_per_1000,
             "corrected_pct": params.corrected_pct,
+            "overshoot_pct": params.overshoot_pct,
             "layout": layout,
             "source_chars": len(text),
             "source_sha256": hashlib.sha256(text.encode()).hexdigest(),
@@ -323,6 +337,7 @@ def make_plan(text: str, params: PlanParams, layout: str = "us") -> dict:
                 "effective_bpm": round(len(events) / (total_ms / 60000.0)) if total_ms else 0,
                 "mistakes": ty.n_err,
                 "corrected": ty.n_fixed,
+                "overshoots": ty.n_over,
                 "left_in_text": ty.n_err - ty.n_fixed,
             },
         },

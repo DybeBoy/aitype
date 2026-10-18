@@ -25,6 +25,7 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--bpm", type=int, default=260, help="typing speed in keystrokes/min between pauses (default 260)")
     ap.add_argument("--mistakes-per-1000", type=int, default=30, metavar="N", help="approx. mistakes per 1000 characters (default 30)")
     ap.add_argument("--corrected-pct", type=int, default=85, metavar="PCT", help="%% of mistakes that get noticed and fixed (default 85)")
+    ap.add_argument("--overshoot-pct", type=int, default=20, metavar="PCT", help="%% of fixes where backspace deletes 1-2 extra characters (default 20)")
     ap.add_argument("--seed", type=int, help="RNG seed (same text + settings + seed = same plan)")
     ap.add_argument("--countdown", type=int, default=5, help="seconds to wait before typing starts (default 5)")
     ap.add_argument("--dry-run", action="store_true", help="only create/print the plan, don't type")
@@ -57,7 +58,7 @@ def _summary(plan: dict) -> str:
     return (
         f"{s.get('keystrokes', len(plan['events']))} keystrokes, ~{_fmt_time(s.get('duration_s', 0))}, "
         f"burst {s.get('burst_bpm', '?')} / effective {s.get('effective_bpm', '?')} kpm, "
-        f"mistakes {s.get('mistakes', '?')} (fixed {s.get('corrected', '?')}, left in text {s.get('left_in_text', '?')}), "
+        f"mistakes {s.get('mistakes', '?')} (fixed {s.get('corrected', '?')}, overshoots {s.get('overshoots', '?')}, left in text {s.get('left_in_text', '?')}), "
         f"seed {m.get('seed', '?')}"
     )
 
@@ -111,6 +112,8 @@ def main(argv=None) -> int:
         ap.error("--mistakes-per-1000 must be between 0 and 500")
     if not 0 <= args.corrected_pct <= 100:
         ap.error("--corrected-pct must be between 0 and 100")
+    if not 0 <= args.overshoot_pct <= 100:
+        ap.error("--overshoot-pct must be between 0 and 100")
     if args.countdown < 0:
         ap.error("--countdown must be >= 0")
 
@@ -125,7 +128,7 @@ def main(argv=None) -> int:
             if not text.strip():
                 print("Nothing to type.", file=sys.stderr)
                 return 1
-            params = PlanParams(args.bpm, args.mistakes_per_1000, args.corrected_pct, args.seed)
+            params = PlanParams(args.bpm, args.mistakes_per_1000, args.corrected_pct, args.overshoot_pct, args.seed)
             plan = make_plan(text, params, layout)
             if args.plan:
                 dump_plan(plan, args.plan)

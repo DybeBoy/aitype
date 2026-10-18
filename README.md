@@ -1,7 +1,7 @@
 # aitype
 
 Types a text file into whatever window you have focused, at human speed: variable
-rhythm, pauses at sentence ends, occasional typos and backspace corrections.
+rhythm, pauses at sentence ends, occasional typos, backspace corrections, and overshoots.
 
 Uses a virtual keyboard (uinput on Linux, SendInput on Windows). No dependencies.
 
@@ -16,6 +16,7 @@ Common options:
     --bpm 260               keystrokes/min between pauses
     --mistakes-per-1000 30  approx. typo rate
     --corrected-pct 85      how many typos get noticed and fixed
+    --overshoot-pct 20      how many fixes delete 1-2 extra characters, then retype them
     --seed 1234             same text + settings + seed = same output
     --dry-run               print plan stats, don't type
     --plan out.json         save the plan, replay later with --plan out.json
