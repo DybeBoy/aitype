@@ -14,7 +14,7 @@ A 5 second countdown starts; focus the target window. Ctrl-C aborts.
 Common options:
 
     --bpm 260               keystrokes/min between pauses
-    --mistakes-per-100 3    approx. typo rate
+    --mistakes-per-1000 30  approx. typo rate
     --corrected-pct 85      how many typos get noticed and fixed
     --seed 1234             same text + settings + seed = same output
     --dry-run               print plan stats, don't type

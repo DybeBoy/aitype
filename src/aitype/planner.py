@@ -28,7 +28,7 @@ NOISE_SIGMA = 0.22      # independent per-key jitter (log scale)
 @dataclass
 class PlanParams:
     bpm: int = 260
-    mistakes_per_100: int = 3
+    mistakes_per_1000: int = 30
     corrected_pct: int = 85
     seed: int | None = None
 
@@ -131,7 +131,7 @@ class _Typist:
         self.n_err = 0
         self.n_fixed = 0
         eligible = sum(c.isalnum() for c in text)
-        per_char = p.mistakes_per_100 / 100.0
+        per_char = p.mistakes_per_1000 / 1000.0
         self.p_err = min(0.5, per_char * len(text) / eligible) if eligible else 0.0
         self.p_fix = p.corrected_pct / 100.0
 
@@ -311,7 +311,7 @@ def make_plan(text: str, params: PlanParams, layout: str = "us") -> dict:
         "meta": {
             "seed": params.seed,
             "bpm": params.bpm,
-            "mistakes_per_100": params.mistakes_per_100,
+            "mistakes_per_1000": params.mistakes_per_1000,
             "corrected_pct": params.corrected_pct,
             "layout": layout,
             "source_chars": len(text),

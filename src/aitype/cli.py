@@ -23,7 +23,7 @@ def _parser() -> argparse.ArgumentParser:
     ap.add_argument("--plan", type=Path, metavar="PLAN.json",
                     help="with --file: save the generated plan here; without --file: load and type this plan")
     ap.add_argument("--bpm", type=int, default=260, help="typing speed in keystrokes/min between pauses (default 260)")
-    ap.add_argument("--mistakes-per-100", type=int, default=3, metavar="N", help="approx. mistakes per 100 characters (default 3)")
+    ap.add_argument("--mistakes-per-1000", type=int, default=30, metavar="N", help="approx. mistakes per 1000 characters (default 30)")
     ap.add_argument("--corrected-pct", type=int, default=85, metavar="PCT", help="%% of mistakes that get noticed and fixed (default 85)")
     ap.add_argument("--seed", type=int, help="RNG seed (same text + settings + seed = same plan)")
     ap.add_argument("--countdown", type=int, default=5, help="seconds to wait before typing starts (default 5)")
@@ -107,8 +107,8 @@ def main(argv=None) -> int:
         ap.error("give --file (plan from text) and/or --plan (saved plan)")
     if not 20 <= args.bpm <= 1500:
         ap.error("--bpm must be between 20 and 1500")
-    if not 0 <= args.mistakes_per_100 <= 50:
-        ap.error("--mistakes-per-100 must be between 0 and 50")
+    if not 0 <= args.mistakes_per_1000 <= 500:
+        ap.error("--mistakes-per-1000 must be between 0 and 500")
     if not 0 <= args.corrected_pct <= 100:
         ap.error("--corrected-pct must be between 0 and 100")
     if args.countdown < 0:
@@ -125,7 +125,7 @@ def main(argv=None) -> int:
             if not text.strip():
                 print("Nothing to type.", file=sys.stderr)
                 return 1
-            params = PlanParams(args.bpm, args.mistakes_per_100, args.corrected_pct, args.seed)
+            params = PlanParams(args.bpm, args.mistakes_per_1000, args.corrected_pct, args.seed)
             plan = make_plan(text, params, layout)
             if args.plan:
                 dump_plan(plan, args.plan)
