@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# uv
+.uv/
+
+# direnv
+.direnv/
+
+# Nix
+result
+result-*
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+test.txt
+
+# Environments & editor/OS cruft
+.env
+*.swp
+.DS_Store
